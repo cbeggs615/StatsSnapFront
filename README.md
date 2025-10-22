@@ -11,3 +11,5 @@ Wanting to personalize his dashboard, Snoopy taps Edit Stats and chooses which m
 Then, Snoopy logs out.
 
 ![User Journey Video](user_journey.mov)
+
+You may have to download the video (sorry)
