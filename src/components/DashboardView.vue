@@ -1,30 +1,50 @@
 <template>
   <div class="dashboard">
-    <h2>My Tracked Teams</h2>
-    <div v-if="loading">Loading...</div>
-    <div v-else-if="teams.length === 0">
+    <h1 class="dashboard-title">
+      <span class="title-word">
+        <span class="capital-m">M</span><span class="small-caps">Y</span><span class="capital-t">T</span><span class="small-caps">EAMS</span>
+      </span>
+      <span class="title-space"> </span>
+      <span class="title-word">
+        <span class="capital-d">D</span><span class="small-caps">ASHBOARD</span>
+      </span>
+    </h1>
+    <div v-if="loading" class="loading-message">Loading...</div>
+    <div v-else-if="teams.length === 0" class="no-teams-message">
       You are not tracking any teams yet.
     </div>
     <div v-else>
-      <div v-for="team in teams" :key="team.teamId" class="team-card">
-        <div class="team-header" @click="openStatsModal(team)" style="cursor:pointer;">
-          <h3>{{ team.teamname }}</h3>
-          <div class="team-sport">{{ team.sportName }}</div>
+      <div v-for="sport in sortedSports" :key="sport" class="sport-section">
+        <h2 class="sport-header">{{ sport }}</h2>
+        <div class="sport-teams">
+          <div v-for="team in teamsBySport[sport]" :key="team.teamId" class="team-card">
+        <div class="team-header">
+          <div class="team-info" @click="openStatsModal(team)" style="cursor:pointer;" title="Click to view all stats">
+            <h3>{{ team.teamname }}</h3>
+            <div class="team-sport">{{ team.sportName }}</div>
+            <div class="click-hint">Click for StatsShot</div>
+          </div>
+          <div class="team-header-actions">
+            <button @click="openEditStatsModal(team)" class="edit-stats-btn">Manage</button>
+            <button @click="removeTeam(team.teamId)" class="remove-btn">Remove</button>
+          </div>
         </div>
         <div class="stats">
           <h4>Key Stats</h4>
           <ul v-if="Object.keys(team.keyStatsData).length">
             <li v-for="([stat, value], idx) in Object.entries(team.keyStatsData).slice(0,2)" :key="stat">
-              <strong>{{ stat }}</strong> {{ value }}
+              <strong>{{ cleanStatName(stat) }}</strong> {{ value }}
+            </li>
+            <li v-if="Object.keys(team.keyStatsData).length > 2" class="more-stats-indicator">
+              <em>+ {{ Object.keys(team.keyStatsData).length - 2 }} more stats</em>
             </li>
           </ul>
           <div v-else class="no-stats">
             No key stats available.
-            <pre style="font-size:0.8em; color:#e63946; background:#f8fafc; padding:4px; border-radius:4px;">{{ team.keyStatsData }}</pre>
           </div>
         </div>
-        <button @click="removeTeam(team.teamId)" class="remove-btn">Stop Tracking</button>
-        <button @click="openEditStatsModal(team)" class="edit-stats-btn">Edit Stats</button>
+          </div>
+        </div>
       </div>
       <TeamStatsModal
         v-if="showStatsModal"
@@ -36,6 +56,7 @@
         v-if="showEditStatsModal"
         :team="selectedTeam"
         :visible="showEditStatsModal"
+        :username="username"
         @close="closeEditStatsModal"
         @stat-added="loadTeams"
       />
@@ -46,6 +67,8 @@
 <script>
 import TeamStatsModal from './TeamStatsModal.vue';
 import EditTeamStatsModal from './EditTeamStatsModal.vue';
+import { getUserStatsCollection, createUserStatsCollection, cleanStatName } from '../utils/api.js';
+
 export default {
   name: 'DashboardView',
   components: { TeamStatsModal, EditTeamStatsModal },
@@ -59,7 +82,34 @@ export default {
       selectedTeam: null
     }
   },
+  computed: {
+    teamsBySport() {
+      const grouped = {};
+      this.teams.forEach(team => {
+        const sportName = team.sportName || team.sport || 'Unknown';
+        if (!grouped[sportName]) {
+          grouped[sportName] = [];
+        }
+        grouped[sportName].push(team);
+      });
+      
+      // Sort teams within each sport by team name
+      Object.keys(grouped).forEach(sport => {
+        grouped[sport].sort((a, b) => a.teamname.localeCompare(b.teamname));
+      });
+      
+      return grouped;
+    },
+    sortedSports() {
+      return Object.keys(this.teamsBySport).sort();
+    }
+  },
   methods: {
+    cleanStatName,
+    async getUserStatsCollection(username, sport) {
+      // Use the API helper function which handles the parsing
+      return await getUserStatsCollection(username, sport);
+    },
     async loadTeams() {
       this.loading = true;
       try {
@@ -84,8 +134,13 @@ export default {
           rawTeamIds = trackedData.items;
         }
 
-        // Filter out null values and ensure we have valid team IDs
-        const teamIds = rawTeamIds.filter(id => id !== null && id !== undefined && id !== '');
+        // Filter out null values, stat items, and ensure we have valid team IDs
+        const teamIds = rawTeamIds.filter(id =>
+          id !== null &&
+          id !== undefined &&
+          id !== '' &&
+          !id.startsWith('stat:') // Exclude individual stat items
+        );
 
 
         // Fetch all teams to get team details
@@ -149,21 +204,80 @@ export default {
 
           // Try to fetch key stats (optional)
           try {
+            console.debug('Fetching stats for', teamname, 'with sportId', sportId);
+
+            // Check if user has tracked stats for this sport
+            const userStats = await this.getUserStatsCollection(this.username, sportId);
+
+            const requestBody = {
+              teamname,
+              sport: sportId
+            };
+
+            // If user has tracked stats, use those (even if empty); otherwise API will use defaultKeyStats
+            if (userStats) {
+              // Convert clean names to API format (with "stat:" prefix)
+              const apiFormatStats = (userStats.stats || []).map(stat =>
+                stat.startsWith('stat:') ? stat : `stat:${stat}`
+              );
+              requestBody.stats = apiFormatStats;
+              console.debug('Using user tracked stats:', userStats.stats, '→ API format:', apiFormatStats);
+            } else {
+              console.debug('No user stats found, using sport defaultKeyStats');
+            }
+
             const statsRes = await fetch('/api/SportsStats/fetchTeamStats', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ teamname, sport: sportId })
+              body: JSON.stringify(requestBody)
             });
+
+            if (!statsRes.ok) {
+              console.error('fetchTeamStats API error:', statsRes.status, await statsRes.text());
+              continue; // Skip this team if stats fail
+            }
+
             const statsData = await statsRes.json();
             console.debug('fetchTeamStats response for', teamname, 'with sportId', sportId, ':', statsData);
-            team.keyStatsData = statsData.keyStatsData || {};
+
+            if (statsData.error) {
+              console.error('fetchTeamStats returned error:', statsData.error);
+              team.keyStatsData = {};
+            } else {
+              team.keyStatsData = statsData.keyStatsData || {};
+
+              // If user has tracked stats, filter keyStatsData to only include selected stats
+              if (userStats) {
+                const filteredKeyStatsData = {};
+                const selectedStats = userStats.stats || [];
+                selectedStats.forEach(stat => {
+                  if (team.keyStatsData[stat] !== undefined) {
+                    filteredKeyStatsData[stat] = team.keyStatsData[stat];
+                  }
+                });
+                team.keyStatsData = filteredKeyStatsData;
+                console.debug('Filtered keyStatsData to match user selection:', team.keyStatsData);
+              } else {
+                console.debug('Final keyStatsData (defaults):', team.keyStatsData);
+              }
+            }
           } catch (statsError) {
-            console.warn('Failed to load stats for', teamname, ':', statsError);
+            console.error('Failed to load stats for', teamname, ':', statsError);
+            team.keyStatsData = {}; // Ensure it's always an object
           }
 
           teams.push(team);
         }
         this.teams = teams;
+
+        // Update selectedTeam reference if a team was selected
+        if (this.selectedTeam && this.selectedTeam.teamId) {
+          const updatedTeam = teams.find(t => t.teamId === this.selectedTeam.teamId);
+          if (updatedTeam) {
+            this.selectedTeam = updatedTeam;
+            console.debug('Updated selectedTeam with fresh data:', this.selectedTeam);
+          }
+        }
       } catch (e) {
         console.error('Error loading dashboard:', e);
       } finally {
@@ -207,9 +321,12 @@ export default {
       this.showEditStatsModal = false;
       this.selectedTeam = null;
     },
+
   },
-  async mounted() {
-    await this.loadTeams();
+  mounted() {
+    this.loadTeams();
+
+    // Dashboard loaded successfully
   },
 
 }
@@ -217,130 +334,247 @@ export default {
 
 <style scoped>
 .dashboard {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 24px;
+  width: 100%;
+  margin: 0;
+  padding: 32px 24px;
+  background: #f7f7f7;
+  box-sizing: border-box;
 }
-.team-card {
-  background: #fff;
-  color: #0a2342;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px rgba(44, 165, 141, 0.12);
-  padding: 24px;
-  margin: 18px auto;
-  max-width: 480px;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
+.dashboard-title {
+  font-family: 'Impact', 'Franklin Gothic Bold', 'Trebuchet MS Bold', 'Arial Black', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  color: #222222;
+  margin: 0 0 32px 0;
   text-align: left;
-  position: relative;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  text-shadow: none;
+  display: flex;
+  align-items: baseline;
+  text-transform: uppercase;
+}
+
+.title-word {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.title-space {
+  width: 0.2em;
+}
+
+.capital-m, .capital-t, .capital-d {
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.dashboard-title .small-caps {
+  font-size: 24px;
+  font-weight: 900;
+}
+.loading-message, .no-teams-message {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #d50a0a;
+  padding: 32px;
+  margin: 16px 0;
+  font-size: 16px;
+  color: #666666;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.sport-section {
+  margin-bottom: 48px;
+}
+
+.sport-header {
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #d50a0a;
+  margin: 0 0 24px 0;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #d50a0a;
+  padding-bottom: 8px;
+}
+
+.sport-teams {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.team-card {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #d50a0a;
+  margin: 0 0 16px 0;
+  padding: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  text-align: left;
 }
 .team-card:hover {
-  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.18);
+  border-left-color: #d50a0a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 .team-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: flex-start;
-  justify-content: flex-start;
-  position: relative;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.team-info {
+  text-align: left;
+  flex-grow: 1;
 }
 .team-header h3 {
-  flex: 1;
-  font-family: 'Oswald', 'Montserrat', sans-serif;
-  color: #2ca58d;
-  font-size: 1.3rem;
-  font-weight: 900;
-  letter-spacing: 1px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #222222;
   margin: 0;
-  padding-right: 0;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: initial;
+  letter-spacing: -0.01em;
+  text-align: left;
 }
 .team-sport {
-  color: #2ca58d;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-  margin-top: 2px;
+  color: #767676;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  text-align: left;
 }
-.remove-btn {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  background: #e63946;
-  color: #fff;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 14px;
-  font-size: 0.85rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  font-weight: 700;
+.team-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.remove-btn, .edit-stats-btn {
+  background: #ffffff;
+  border: 1px solid #d1d1d1;
+  color: #333333;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(44, 165, 141, 0.10);
-  transition: background 0.2s, transform 0.2s;
-  min-width: 70px;
-  text-align: center;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .remove-btn:hover {
-  background: #2ca58d;
-  color: #fff;
-  transform: scale(1.05);
-}
-.edit-stats-btn {
-  position: absolute;
-  bottom: 52px;
-  right: 16px;
-  background: #2ca58d;
-  color: #fff;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 14px;
-  font-size: 0.85rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(44, 165, 141, 0.10);
-  transition: background 0.2s, transform 0.2s;
-  min-width: 70px;
-  text-align: center;
-}
-.edit-stats-btn:hover {
-  background: #e63946;
-  color: #fff;
-  transform: scale(1.05);
+  background: #f0f0f0;
+  border-color: #999999;
 }
 .stats {
+  border-top: 1px solid #e5e5e5;
+  padding-top: 12px;
   margin-top: 12px;
+  text-align: left;
 }
 .stats h4 {
-  color: #2ca58d;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  font-weight: 700;
-  margin-bottom: 6px;
+  color: #333333;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: left;
 }
 ul {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: flex-start;
 }
 li {
-  margin-bottom: 6px;
-  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  text-align: left;
 }
-a {
-  color: #2ca58d;
-  text-decoration: underline;
-  margin-left: 8px;
+li strong {
+  font-size: 11px;
+  color: #767676;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+li:not(.more-stats-indicator) {
+  font-size: 24px;
   font-weight: 700;
+  color: #222222;
+  line-height: 1;
+  margin-top: 4px;
+}
+.more-stats-indicator {
+  color: #999999;
+  font-style: italic;
+  font-size: 12px;
+  align-self: flex-start;
+  text-align: left;
+}
+.click-hint {
+  font-size: 11px;
+  color: #999999;
+  margin-top: 2px;
+  text-align: left;
+}
+.team-info:hover .click-hint {
+  color: #d50a0a;
+}
+.no-stats {
+  color: #999999;
+  font-size: 14px;
+  padding: 20px 0;
+  text-align: center;
+  border: 2px dashed #e5e5e5;
+}
+.no-stats pre {
+  display: none;
 }
 @media (max-width: 600px) {
   .dashboard {
-    padding: 8px;
+    padding: 16px 12px;
+  }
+  .dashboard-title {
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+  .sport-header {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  .sport-section {
+    margin-bottom: 32px;
   }
   .team-card {
-    padding: 12px 8px;
+    padding: 12px;
+  }
+  ul {
+    gap: 16px;
+  }
+  li {
+    min-width: 100px;
+  }
+  .team-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .team-header-actions {
+    width: 100%;
   }
 }
 </style>

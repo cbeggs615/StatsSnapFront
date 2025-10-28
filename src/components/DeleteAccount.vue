@@ -1,23 +1,36 @@
 <template>
   <div class="delete-account-modal">
-    <form @submit.prevent="handleDelete">
-      <h2>Delete Account</h2>
-      <div>
-        <label for="del-password">Confirm Password:</label>
-        <div class="password-input-wrapper">
-          <input id="del-password" :type="showPassword ? 'text' : 'password'" v-model="password" required />
-          <button type="button" class="toggle-password" @click="showPassword = !showPassword">
-            {{ showPassword ? 'Hide' : 'Show' }}
-          </button>
+    <div class="modal-overlay" @click="$emit('close')"></div>
+    <div class="delete-account-card">
+      <div class="modal-header">
+        <h2>Delete Account</h2>
+        <button @click="$emit('close')" class="close-button">×</button>
+      </div>
+
+      <form @submit.prevent="handleDelete" class="delete-form">
+        <div class="warning-message">
+          <strong>Warning:</strong> This action cannot be undone. All your tracked teams and stats will be permanently deleted.
         </div>
-      </div>
-      <div class="actions">
-        <button type="submit">Delete Account</button>
-        <button type="button" @click="$emit('close')" class="cancel-btn">Cancel</button>
-      </div>
-      <div v-if="error" class="error">{{ error }}</div>
-      <div v-if="success" class="success">Account deleted. You are now logged out.</div>
-    </form>
+
+        <div class="form-field">
+          <label for="del-password">Confirm Password</label>
+          <div class="password-input-wrapper">
+            <input id="del-password" :type="showPassword ? 'text' : 'password'" v-model="password" required />
+            <button type="button" class="toggle-password" @click="showPassword = !showPassword">
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" @click="$emit('close')" class="cancel-button">Cancel</button>
+          <button type="submit" class="delete-button">Delete Account</button>
+        </div>
+
+        <div v-if="error" class="error">{{ error }}</div>
+        <div v-if="success" class="success">Account deleted successfully. You are now logged out.</div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -51,7 +64,7 @@ export default {
           this.error = result.error || 'Delete failed.';
         }
       } catch (e) {
-        this.error = 'Network error: ' + (e.message || e);
+        this.error = 'Unable to connect to the server. Please check your connection and try again.';
         console.error('Network error during account deletion:', e);
       }
     }
@@ -66,96 +79,235 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(60, 60, 60, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
 }
-form {
-  max-width: 320px;
-  margin: 0;
-  padding: 28px 24px;
-  border: 2px solid #2ca58d;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
-  color: #0a2342;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-label {
-  align-self: flex-start;
-  color: #0a2342;
-  font-weight: 700;
-}
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0 16px 0;
-  border: 1px solid #2ca58d;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  color: #0a2342;
-  background: #f8fafc;
-  text-align: left;
-}
-.password-input-wrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.toggle-password {
+
+.modal-overlay {
   position: absolute;
-  right: 10px;
-  top: 10px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+
+.delete-account-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #d50a0a;
+  max-width: 500px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  text-align: left;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 32px 0 32px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+}
+
+h2 {
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0;
+  text-shadow: none;
+  letter-spacing: -0.02em;
+}
+
+.close-button {
   background: none;
   border: none;
-  color: #2ca58d;
+  font-size: 32px;
+  font-weight: 300;
+  color: #999999;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 0 6px;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
+
+.close-button:hover {
+  color: #d50a0a;
+}
+
+.delete-form {
+  padding: 0 32px 32px 32px;
+}
+
+.warning-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-left: 4px solid #f39c12;
+  padding: 16px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #856404;
+}
+
+.form-field {
+  margin-bottom: 24px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 0;
+  border: 1px solid #d1d1d1;
+  background: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333333;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: #d50a0a;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 60px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #666666;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .toggle-password:hover {
-  color: #0a2342;
+  color: #d50a0a;
 }
+
 .actions {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 16px;
+  margin-top: 24px;
 }
-.cancel-btn {
-  background: #e5e7eb;
-  color: #22223b;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 1rem;
+
+.cancel-button {
+  background: #ffffff;
+  color: #666666;
+  border: 1px solid #d1d1d1;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
 }
-.cancel-btn:hover {
-  background: #cbd5e1;
+
+.cancel-button:hover {
+  background: #f8f9fa;
+  border-color: #999999;
 }
+
+.delete-button {
+  background: #d50a0a;
+  color: #ffffff;
+  border: 1px solid #d50a0a;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+
+.delete-button:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
 .error {
-  color: #dc2626;
-  font-weight: 500;
+  color: #d50a0a;
+  font-size: 14px;
+  padding: 12px;
+  background: #ffebee;
+  border-left: 4px solid #d50a0a;
+  margin: 16px 0 0 0;
 }
+
 .success {
-  color: #059669;
-  font-weight: 500;
+  color: #1b5e20;
+  font-size: 14px;
+  padding: 12px;
+  background: #e8f5e8;
+  border-left: 4px solid #4caf50;
+  margin: 16px 0 0 0;
 }
-h2 {
-  color: #2ca58d;
-  font-family: 'Oswald', 'Montserrat', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 18px;
+
+@media (max-width: 768px) {
+  .delete-account-card {
+    width: 95vw;
+    max-height: 85vh;
+  }
+
+  .modal-header {
+    padding: 20px 20px 0 20px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+
+  .delete-form {
+    padding: 0 20px 20px 20px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 </style>

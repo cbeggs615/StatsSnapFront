@@ -1,12 +1,12 @@
 <template>
-  <form @submit.prevent="handleLogin">
-    <h2>Login</h2>
-    <div>
-      <label for="username">Username:</label>
+  <form @submit.prevent="handleLogin" class="login-form">
+    <h2>Sign In to StatsSnap</h2>
+    <div class="form-field">
+      <label for="username">Username</label>
       <input id="username" v-model="username" required />
     </div>
-    <div>
-      <label for="password">Password:</label>
+    <div class="form-field">
+      <label for="password">Password</label>
       <div class="password-input-wrapper">
         <input id="password" :type="showPassword ? 'text' : 'password'" v-model="password" required />
         <button type="button" class="toggle-password" @click="showPassword = !showPassword">
@@ -14,7 +14,7 @@
         </button>
       </div>
     </div>
-    <button type="submit">Login</button>
+    <button type="submit" class="submit-button">Sign In</button>
     <div v-if="error" class="error">{{ error }}</div>
   </form>
 </template>
@@ -46,7 +46,7 @@ export default {
           this.error = result.error || 'Login failed.';
         }
       } catch (e) {
-        this.error = 'Network error.';
+        this.error = 'Unable to connect to the server. Please check your connection and try again.';
       }
     }
   }
@@ -54,84 +54,122 @@ export default {
 </script>
 
 <style scoped>
-form {
-  max-width: 340px;
+.login-form {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #d50a0a;
+  padding: 32px;
   margin: 40px auto;
-  padding: 24px;
-  border: 2px solid #2ca58d;
-  border-radius: 18px;
-  background: #fff;
-  color: #0a2342;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  box-shadow: 0 4px 16px rgba(44, 165, 141, 0.12);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  max-width: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
+
 h2 {
-  font-family: 'Oswald', 'Montserrat', sans-serif;
-  color: #2ca58d;
-  font-size: 1.3rem;
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 18px;
+  color: #222222;
+  margin: 0 0 24px 0;
+  text-shadow: none;
+  letter-spacing: -0.02em;
 }
+
+.form-field {
+  margin-bottom: 24px;
+}
+
 label {
-  color: #0a2342;
-  font-weight: 700;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  align-self: flex-start;
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
+
 input {
   width: 100%;
-  padding: 10px;
-  margin: 8px 0 16px 0;
-  border: 1px solid #2ca58d;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  color: #0a2342;
-  background: #f8fafc;
-  text-align: left;
+  padding: 12px 16px;
+  margin: 0;
+  border: 1px solid #d1d1d1;
+  background: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333333;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
-button {
-  background: #2ca58d;
-  color: #fff;
-  border: none;
-  padding: 12px 28px;
-  border-radius: 30px;
-  font-size: 1.1rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
-  font-weight: 700;
-  cursor: pointer;
-  margin: 10px 0;
-  box-shadow: 0 2px 8px rgba(44, 165, 141, 0.15);
-  transition: background 0.2s, transform 0.2s;
+
+input:focus {
+  outline: none;
+  border-color: #d50a0a;
 }
-button:hover {
-  background: #0a2342;
-  color: #fff;
-  transform: scale(1.05);
-}
-.error {
-  color: #e63946;
-  font-weight: 700;
-  margin-top: 10px;
-}
+
 .password-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
 }
+
+.password-input-wrapper input {
+  padding-right: 60px;
+}
+
 .toggle-password {
+  position: absolute;
+  right: 12px;
   background: none;
   border: none;
-  color: #2ca58d;
-  font-weight: 700;
+  color: #666666;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.95em;
-  padding: 0 6px;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
+
 .toggle-password:hover {
-  color: #0a2342;
+  color: #d50a0a;
+}
+
+.submit-button {
+  background: #d50a0a;
+  color: #ffffff;
+  border: 1px solid #d50a0a;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin: 16px 0 0 0;
+  width: 100%;
+}
+
+.submit-button:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
+.error {
+  color: #d50a0a;
+  font-size: 14px;
+  padding: 12px;
+  background: #ffebee;
+  border-left: 4px solid #d50a0a;
+  margin: 16px 0 0 0;
+}
+
+@media (max-width: 600px) {
+  .login-form {
+    margin: 20px auto;
+    padding: 24px;
+    max-width: 90vw;
+  }
 }
 </style>

@@ -1,96 +1,207 @@
 <template>
-  <div class="team-details-modal" v-if="visible">
-    <div class="team-details-card">
-      <h2>{{ team.teamname }}</h2>
-      <div class="team-sport">{{ team.sportName || team.sport }}</div>
-      <h3>All Stats</h3>
-      <div class="all-stats-list">
-        <div v-for="([stat, value], idx) in Object.entries(team.keyStatsData)" :key="stat" class="all-stat-item">
-          <span class="stat-name"><strong>{{ stat }}</strong>:</span>
-          <span class="stat-value">{{ value }}</span>
+  <div class="stats-shot-modal" v-if="visible">
+    <div class="stats-shot-overlay" @click="$emit('close')"></div>
+    <div class="stats-shot-card">
+      <div class="modal-header">
+        <div class="team-info">
+          <h2 class="team-name">{{ team.teamname }}</h2>
+          <div class="team-sport">{{ team.sportName || team.sport }}</div>
+        </div>
+        <button @click="$emit('close')" class="close-button">×</button>
+      </div>
+
+      <div class="stats-section">
+        <h3 class="section-title">{{ team.teamname }} StatsShot</h3>
+        <div class="stats-grid">
+          <div v-for="([stat, value], idx) in Object.entries(team.keyStatsData)" :key="stat" class="stat-card">
+            <div class="stat-label">{{ cleanStatName(stat) }}</div>
+            <div class="stat-value">{{ value }}</div>
+          </div>
         </div>
       </div>
-      <button @click="$emit('close')" class="close-btn">Close</button>
     </div>
   </div>
 </template>
 
 <script>
+import { cleanStatName } from '../utils/api.js';
+
 export default {
   name: 'TeamStatsModal',
   props: {
     team: { type: Object, required: true },
     visible: { type: Boolean, required: true }
+  },
+  methods: {
+    cleanStatName
   }
 }
 </script>
 
 <style scoped>
-.team-details-modal {
+.stats-shot-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(60, 60, 60, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 1000;
 }
-.team-details-card {
-  background: #fff;
-  color: #0a2342;
-  border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(44, 165, 141, 0.18);
-  padding: 32px 28px;
-  min-width: 320px;
-  max-width: 90vw;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
+
+.stats-shot-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+}
+
+.stats-shot-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #d50a0a;
+  max-width: 700px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   text-align: left;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
-.team-sport {
-  color: #2ca58d;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-.all-stats-list {
+
+.modal-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 32px 32px 0 32px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
 }
-.all-stat-item {
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 8px 14px;
+
+.team-info {
+  flex: 1;
+}
+
+.team-name {
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 8px 0;
+  text-shadow: none;
+  letter-spacing: -0.02em;
+}
+
+.team-sport {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 32px;
+  font-weight: 300;
+  color: #999999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 8px rgba(44, 165, 141, 0.10);
+  justify-content: center;
+  line-height: 1;
 }
-.stat-name {
-  color: #2ca58d;
+
+.close-button:hover {
+  color: #d50a0a;
+}
+
+.stats-section {
+  padding: 0 32px 32px 32px;
+}
+
+.section-title {
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
+  font-size: 20px;
   font-weight: 700;
+  color: #222222;
+  margin: 0 0 24px 0;
+  text-shadow: none;
+  letter-spacing: -0.02em;
 }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
 .stat-value {
-  color: #0a2342;
-  font-weight: 500;
-}
-.close-btn {
-  background: #2ca58d;
-  color: #fff;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 18px;
-  font-size: 1rem;
-  font-family: 'Montserrat', 'Oswald', sans-serif;
+  font-size: 24px;
   font-weight: 700;
-  cursor: pointer;
-  margin-top: 18px;
+  color: #222222;
+  font-family: 'BentonSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', Arial, sans-serif;
 }
-.close-btn:hover {
-  background: #0a2342;
+
+@media (max-width: 768px) {
+  .stats-shot-card {
+    width: 95vw;
+    max-height: 85vh;
+  }
+
+  .modal-header {
+    padding: 20px 20px 0 20px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+
+  .stats-section {
+    padding: 0 20px 20px 20px;
+  }
+
+  .team-name {
+    font-size: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
 }
 </style>
