@@ -2,14 +2,14 @@
 
 ## User Journey
 
-Snoopy is a sports fan who follows the Ravens in the NFL and the Phillies in the MLB. With games across different leagues and times, he used to bounce between apps like ESPN, NFL.com, and MLB.com just to figure out how they’re doing. He’s frustrated that each app buries him in ads and articles when all he really wants are scores and key stats.
+Snoopy is a sports fan who follows the Red Sox and Rockies in the MLB, the Ravens in the NFL, and the Celtics in the NBA. He’s tired of jumping between ESPN, NFL.com, and MLB.com just to see how his teams are doing, and frustrated by all the ads and clutter.
 
-Then, Snoopy discovers StatsSnap. He creates an account and logs in for the first time. On setup, he’s prompted to add his favorite teams — he starts with the Ravens and the Phillies. Instantly, they appear on his "My Tracked Teams" Dashboard, where each team tile shows a snapshot of their key stats in one clean, ad-free view. When clicked, the teams show all their key stats.
+Then, Snoopy discovers StatSnap. After signing up, he adds his favorite teams, and they instantly appear on his MyTeams Dashboard — clean, organized, and ad-free.
 
-Wanting to personalize his dashboard, Snoopy taps Edit Stats and chooses which metrics matter most to him. He decides to add home runs for MLB teams. Now, when he clicks on the Phillies, he can see that stat added to the list of stats for the team. He decides to add the Orioles, but after being disappointed by their wins-losses count, he decides to stop tracking them.
+He clicks Manage for the Red Sox to customize what stats he tracks, adding batting average for MLB teams. When he adds the Celtics, he swaps out losses for points per game, and the dashboard updates right away.
 
-Then, Snoopy logs out.
+Finally, Snoopy adds the Ravens — but after seeing their record, he decides to remove them. Satisfied with his personalized dashboard, he logs out knowing his settings will be saved for the next time he comes back to StatSnap.
 
-![User Journey Video](user_journey.mov)
+![User Journey Video](user_journey_updated.mov)
 
 You may have to download the video (sorry)
