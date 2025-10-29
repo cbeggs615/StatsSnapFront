@@ -18,6 +18,7 @@
             @mouseenter="openAccountMenu"
             @mouseleave="delayedCloseAccountMenu"
           >
+            <button @click="openChangePassword">Change Password</button>
             <button @click="logout">Log Out</button>
             <button @click="showDelete = !showDelete">Delete Account</button>
           </div>
@@ -35,6 +36,7 @@
     </div>
     <div v-else>
       <DeleteAccount v-if="showDelete" :username="username" @account-deleted="onAccountDeleted" @close="showDelete = false" />
+      <ChangePasswordModal v-if="showChangePassword" :visible="showChangePassword" :username="username" @close="showChangePassword = false" />
       <div class="main-content">
         <div class="dashboard-section">
           <DashboardView ref="dashboardView" :username="username" />
@@ -51,18 +53,20 @@
 import LoginForm from './components/LoginForm.vue'
 import RegisterForm from './components/RegisterForm.vue'
 import DeleteAccount from './components/DeleteAccount.vue'
+import ChangePasswordModal from './components/ChangePasswordModal.vue'
 import DashboardView from './components/DashboardView.vue'
 import FavoriteTeamForm from './components/FavoriteTeamForm.vue'
 
 export default {
   name: 'App',
-  components: { LoginForm, RegisterForm, DeleteAccount, DashboardView, FavoriteTeamForm },
+  components: { LoginForm, RegisterForm, DeleteAccount, ChangePasswordModal, DashboardView, FavoriteTeamForm },
   data() {
     return {
       loggedIn: false,
       username: '',
       showRegister: false,
       showDelete: false,
+      showChangePassword: false,
       isAdmin: false,
       showAccountMenu: false,
       accountMenuCloseTimer: null
@@ -97,6 +101,10 @@ export default {
     logout() {
       this.loggedIn = false;
       this.username = '';
+    },
+    openChangePassword() {
+      this.showChangePassword = true;
+      this.showAccountMenu = false;
     },
     onAccountDeleted() {
       this.logout();

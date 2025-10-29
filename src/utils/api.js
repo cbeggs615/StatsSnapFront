@@ -1,12 +1,12 @@
 // Utility function to clean stat names for display
 export function cleanStatName(statName) {
   if (typeof statName !== 'string') return statName;
-  
+
   // Remove 'stat:' prefix if it exists
   if (statName.startsWith('stat:')) {
     return statName.substring(5);
   }
-  
+
   return statName;
 }
 

@@ -1,6 +1,6 @@
 <template>
   <form @submit.prevent="handleLogin" class="login-form">
-    <h2>Sign In to StatsSnap</h2>
+    <h2>Sign In to StatSnap</h2>
     <div class="form-field">
       <label for="username">Username</label>
       <input id="username" v-model="username" required />

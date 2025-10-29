@@ -22,7 +22,7 @@
           <div class="team-info" @click="openStatsModal(team)" style="cursor:pointer;" title="Click to view all stats">
             <h3>{{ team.teamname }}</h3>
             <div class="team-sport">{{ team.sportName }}</div>
-            <div class="click-hint">Click for StatsShot</div>
+            <div class="click-hint">Click for StatShot</div>
           </div>
           <div class="team-header-actions">
             <button @click="openEditStatsModal(team)" class="edit-stats-btn">Manage</button>
@@ -92,12 +92,12 @@ export default {
         }
         grouped[sportName].push(team);
       });
-      
+
       // Sort teams within each sport by team name
       Object.keys(grouped).forEach(sport => {
         grouped[sport].sort((a, b) => a.teamname.localeCompare(b.teamname));
       });
-      
+
       return grouped;
     },
     sortedSports() {

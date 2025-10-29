@@ -1,6 +1,6 @@
 <template>
   <form @submit.prevent="handleRegister" class="register-form">
-    <h2>Create StatsSnap Account</h2>
+    <h2>Create StatSnap Account</h2>
     <div class="form-field">
       <label for="reg-username">Username</label>
       <input id="reg-username" v-model="username" required />

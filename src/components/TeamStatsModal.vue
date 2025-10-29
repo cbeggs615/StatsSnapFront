@@ -1,7 +1,7 @@
 <template>
-  <div class="stats-shot-modal" v-if="visible">
-    <div class="stats-shot-overlay" @click="$emit('close')"></div>
-    <div class="stats-shot-card">
+  <div class="stat-shot-modal" v-if="visible">
+    <div class="stat-shot-overlay" @click="$emit('close')"></div>
+    <div class="stat-shot-card">
       <div class="modal-header">
         <div class="team-info">
           <h2 class="team-name">{{ team.teamname }}</h2>
@@ -11,7 +11,7 @@
       </div>
 
       <div class="stats-section">
-        <h3 class="section-title">{{ team.teamname }} StatsShot</h3>
+        <h3 class="section-title">{{ team.teamname }} StatShot</h3>
         <div class="stats-grid">
           <div v-for="([stat, value], idx) in Object.entries(team.keyStatsData)" :key="stat" class="stat-card">
             <div class="stat-label">{{ cleanStatName(stat) }}</div>
@@ -39,7 +39,7 @@ export default {
 </script>
 
 <style scoped>
-.stats-shot-modal {
+.stat-shot-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -51,7 +51,7 @@ export default {
   z-index: 1000;
 }
 
-.stats-shot-overlay {
+.stat-shot-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -61,7 +61,7 @@ export default {
   cursor: pointer;
 }
 
-.stats-shot-card {
+.stat-shot-card {
   position: relative;
   background: #ffffff;
   border: 1px solid #e5e5e5;
@@ -172,7 +172,7 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .stats-shot-card {
+  .stat-shot-card {
     width: 95vw;
     max-height: 85vh;
   }
