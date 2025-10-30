@@ -20,6 +20,8 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
+
 export default {
   name: 'LoginForm',
   data() {
@@ -34,7 +36,7 @@ export default {
     async handleLogin() {
       this.error = '';
       try {
-        const response = await fetch('/api/PasswordAuth/authenticate', {
+        const response = await fetch(`${API_BASE}/PasswordAuth/authenticate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: this.username, password: this.password })

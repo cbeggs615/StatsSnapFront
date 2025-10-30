@@ -65,6 +65,7 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
 import TeamStatsModal from './TeamStatsModal.vue';
 import EditTeamStatsModal from './EditTeamStatsModal.vue';
 import { getUserStatsCollection, createUserStatsCollection, cleanStatName } from '../utils/api.js';
@@ -117,7 +118,7 @@ export default {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-        const trackedRes = await fetch('/api/ItemTracking/_getItemsTrackedByUser', {
+        const trackedRes = await fetch(`${API_BASE}/ItemTracking/_getItemsTrackedByUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: this.username }),
@@ -147,7 +148,7 @@ export default {
         const allTeamsController = new AbortController();
         const allTeamsTimeoutId = setTimeout(() => allTeamsController.abort(), 10000);
 
-        const allTeamsRes = await fetch('/api/SportsStats/_getAllTeams', {
+        const allTeamsRes = await fetch(`${API_BASE}/SportsStats/_getAllTeams`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),
@@ -157,7 +158,7 @@ export default {
         const allTeamsData = await allTeamsRes.json();
 
         // Fetch sports list to map sport IDs to sport names
-        const sportsRes = await fetch('/api/SportsStats/_getSportsList', {
+        const sportsRes = await fetch(`${API_BASE}/SportsStats/_getSportsList`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -226,7 +227,7 @@ export default {
               console.debug('No user stats found, using sport defaultKeyStats');
             }
 
-            const statsRes = await fetch('/api/SportsStats/fetchTeamStats', {
+            const statsRes = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(requestBody)
@@ -287,7 +288,7 @@ export default {
     async removeTeam(teamId) {
       try {
         console.log('Removing team:', teamId);
-        const response = await fetch('/api/ItemTracking/removeItem', {
+        const response = await fetch(`${API_BASE}/ItemTracking/removeItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: this.username, item: teamId })

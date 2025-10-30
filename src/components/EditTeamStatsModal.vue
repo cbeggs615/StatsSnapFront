@@ -37,6 +37,7 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
 import { fetchAvailableStatsForTeam, getUserStatsCollection, addUserStat, removeUserStat, removeUserStatsCollection, createUserStatsCollection, fetchSportDetails, cleanStatName } from '../utils/api.js';
 export default {
   name: 'EditTeamStatsModal',
@@ -202,7 +203,7 @@ export default {
 
           console.debug('Sending request to fetchTeamStats:', JSON.stringify(requestBody, null, 2));
 
-          const response = await fetch('/api/SportsStats/fetchTeamStats', {
+          const response = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)

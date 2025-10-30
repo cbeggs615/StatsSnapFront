@@ -1,3 +1,5 @@
+import { API_BASE } from './apiConfig.js'
+
 // Utility function to clean stat names for display
 export function cleanStatName(statName) {
   if (typeof statName !== 'string') return statName;
@@ -12,7 +14,7 @@ export function cleanStatName(statName) {
 
 export async function fetchSportsList() {
   try {
-    const response = await fetch('/api/SportsStats/_getSportsList', {
+    const response = await fetch(`${API_BASE}/SportsStats/_getSportsList`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -27,7 +29,7 @@ export async function fetchSportsList() {
 
 export async function fetchTeamsBySport(sportId) {
   try {
-    const response = await fetch('/api/SportsStats/_getTeamsBySport', {
+    const response = await fetch(`${API_BASE}/SportsStats/_getTeamsBySport`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sportId: sportId })
@@ -43,7 +45,7 @@ export async function fetchTeamsBySport(sportId) {
 
 export async function fetchAvailableStatsForTeam(teamname, sportId) {
   try {
-    const response = await fetch('/api/SportsStats/fetchAvailableStatsForTeam', {
+    const response = await fetch(`${API_BASE}/SportsStats/fetchAvailableStatsForTeam`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ teamname, sport: sportId })
@@ -68,7 +70,7 @@ export async function addKeyStat(sportName, stat) {
       headers: { 'Content-Type': 'application/json' },
       body: { sportName, stat }
     });
-    const response = await fetch('/api/SportsStats/addKeyStat', {
+    const response = await fetch(`${API_BASE}/SportsStats/addKeyStat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sportName, stat })
@@ -84,7 +86,7 @@ export async function addKeyStat(sportName, stat) {
 
 export async function removeKeyStat(sportName, stat) {
   try {
-    const response = await fetch('/api/SportsStats/removeKeyStat', {
+    const response = await fetch(`${API_BASE}/SportsStats/removeKeyStat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sportName, stat })
@@ -104,7 +106,7 @@ export async function fetchTeamStats(teamname, sportId, stats = null) {
       requestBody.stats = stats;
     }
 
-    const response = await fetch('/api/SportsStats/fetchTeamStats', {
+    const response = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
@@ -122,7 +124,7 @@ export async function getUserStatsCollection(username, sport) {
   console.log('🚀 getUserStatsCollection called with:', username, sport);
   try {
     // Check if user has tracked individual stats for this sport
-    const response = await fetch('/api/ItemTracking/_getItemsTrackedByUser', {
+    const response = await fetch(`${API_BASE}/ItemTracking/_getItemsTrackedByUser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username })
@@ -251,7 +253,7 @@ export async function createUserStatsCollection(username, sport, stats) {
         const statId = `stat:${sport}:${username}:${normalizedStat}`;
         console.debug('Tracking stat:', statId, '(from input:', stat, ')');
 
-        const response = await fetch('/api/ItemTracking/addItem', {
+        const response = await fetch(`${API_BASE}/ItemTracking/addItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: username, item: statId })
@@ -302,7 +304,7 @@ export async function createUserStatsCollection(username, sport, stats) {
 export async function removeUserStatsCollection(username, sport) {
   try {
     // Get ALL tracked items for the user to find ALL stats for this sport
-    const response = await fetch('/api/ItemTracking/_getItemsTrackedByUser', {
+    const response = await fetch(`${API_BASE}/ItemTracking/_getItemsTrackedByUser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username })
@@ -335,7 +337,7 @@ export async function removeUserStatsCollection(username, sport) {
       try {
         console.debug('Removing item:', itemId);
 
-        const removeResponse = await fetch('/api/ItemTracking/removeItem', {
+        const removeResponse = await fetch(`${API_BASE}/ItemTracking/removeItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -386,7 +388,7 @@ export async function fetchSportDetails(sportId) {
 export async function removeAllUserCollections(username) {
   try {
     // Get ALL tracked items for the user
-    const response = await fetch('/api/ItemTracking/_getItemsTrackedByUser', {
+    const response = await fetch(`${API_BASE}/ItemTracking/_getItemsTrackedByUser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username })
@@ -414,7 +416,7 @@ export async function removeAllUserCollections(username) {
       try {
         console.debug('Removing collection:', collectionId);
 
-        const removeResponse = await fetch('/api/ItemTracking/removeItem', {
+        const removeResponse = await fetch(`${API_BASE}/ItemTracking/removeItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -458,7 +460,7 @@ export async function addUserStat(username, sport, statName) {
     const statId = `stat:${sport}:${username}:${statName}`;
     console.debug('Adding individual stat:', statId);
 
-    const response = await fetch('/api/ItemTracking/addItem', {
+    const response = await fetch(`${API_BASE}/ItemTracking/addItem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username, item: statId })
@@ -500,7 +502,7 @@ export async function removeUserStat(username, sport, statName) {
     const statId = `stat:${sport}:${username}:${statName}`;
     console.debug('Removing individual stat:', statId, '(from input:', statName, ')');
 
-    const response = await fetch('/api/ItemTracking/removeItem', {
+    const response = await fetch(`${API_BASE}/ItemTracking/removeItem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: username, item: statId })

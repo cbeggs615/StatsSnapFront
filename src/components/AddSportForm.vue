@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
 import { fetchSportsList } from '../utils/api.js';
 
 export default {
@@ -74,7 +75,7 @@ export default {
         return;
       }
       try {
-        const response = await fetch('/api/SportsStats/addSport', {
+        const response = await fetch(`${API_BASE}/SportsStats/addSport`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -114,7 +115,7 @@ export default {
       }
 
       try {
-        const response = await fetch('/api/SportsStats/deleteSport', {
+        const response = await fetch(`${API_BASE}/SportsStats/deleteSport`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sportName: this.getSportNameById(this.selectedSportToDelete) })

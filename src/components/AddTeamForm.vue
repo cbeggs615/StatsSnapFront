@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
 import { fetchSportsList } from '../utils/api.js';
 
 export default {
@@ -80,7 +81,7 @@ export default {
     },
     async refreshAllTeams() {
       try {
-        const response = await fetch('/api/SportsStats/_getAllTeams', {
+        const response = await fetch(`${API_BASE}/SportsStats/_getAllTeams`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -117,7 +118,7 @@ export default {
       const sportId = selectedSport ? selectedSport._id : this.sport;
       try {
         // Add team to SportsStats
-        const teamRes = await fetch('/api/SportsStats/addTeam', {
+        const teamRes = await fetch(`${API_BASE}/SportsStats/addTeam`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ teamname: this.teamname, sport: sportId })
@@ -156,7 +157,7 @@ export default {
           this.deleteError = 'Sport information not available. Please try again.';
           return;
         }
-        const response = await fetch('/api/SportsStats/removeTeam', {
+        const response = await fetch(`${API_BASE}/SportsStats/removeTeam`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ teamname, sport })

@@ -50,6 +50,7 @@
 </template>
 
 <script>
+import { API_BASE } from './utils/apiConfig.js'
 import LoginForm from './components/LoginForm.vue'
 import RegisterForm from './components/RegisterForm.vue'
 import DeleteAccount from './components/DeleteAccount.vue'
@@ -75,7 +76,7 @@ export default {
   methods: {
     async ensureUserRecord(username) {
       try {
-        await fetch('/api/ItemTracking/addUserRecord', {
+        await fetch(`${API_BASE}/ItemTracking/addUserRecord`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: username })

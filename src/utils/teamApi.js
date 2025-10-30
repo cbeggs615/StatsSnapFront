@@ -1,6 +1,8 @@
+import { API_BASE } from './apiConfig.js'
+
 export async function fetchTeamDetails(teamId) {
   try {
-    const response = await fetch('/api/SportsStats/_getTeamDetails', {
+    const response = await fetch(`${API_BASE}/SportsStats/_getTeamDetails`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ teamStats: teamId })

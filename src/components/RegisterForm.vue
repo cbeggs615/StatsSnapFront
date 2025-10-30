@@ -21,6 +21,8 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
+
 export default {
   name: 'RegisterForm',
   data() {
@@ -37,7 +39,7 @@ export default {
       this.error = '';
       this.success = false;
       try {
-        const response = await fetch('/api/PasswordAuth/register', {
+        const response = await fetch(`${API_BASE}/PasswordAuth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: this.username, password: this.password })

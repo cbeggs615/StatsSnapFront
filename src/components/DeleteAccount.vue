@@ -35,6 +35,8 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
+
 export default {
   name: 'DeleteAccount',
   props: ['username'],
@@ -51,7 +53,7 @@ export default {
       this.error = '';
       this.success = false;
       try {
-        const response = await fetch('/api/PasswordAuth/deleteAccount', {
+        const response = await fetch(`${API_BASE}/PasswordAuth/deleteAccount`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: this.username, password: this.password })

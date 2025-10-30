@@ -30,6 +30,7 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
 import { fetchSportsList, fetchTeamsBySport, fetchSportDetails, createUserStatsCollection, getUserStatsCollection, removeUserStatsCollection, removeAllUserCollections } from '../utils/api.js';
 
 export default {
@@ -79,7 +80,7 @@ export default {
       this.success = false;
       try {
         // First, track the team
-        const response = await fetch('/api/ItemTracking/addItem', {
+        const response = await fetch(`${API_BASE}/ItemTracking/addItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: this.username, item: this.selectedTeam })

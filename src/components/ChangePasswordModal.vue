@@ -85,6 +85,8 @@
 </template>
 
 <script>
+import { API_BASE } from '../utils/apiConfig.js'
+
 export default {
   name: 'ChangePasswordModal',
   props: {
@@ -118,7 +120,7 @@ export default {
       this.loading = true;
 
       try {
-        const response = await fetch('/api/PasswordAuth/changePassword', {
+        const response = await fetch(`${API_BASE}/PasswordAuth/changePassword`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
