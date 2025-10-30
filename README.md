@@ -12,5 +12,5 @@ Finally, Snoopy adds the Ravens — but after seeing their record, he decides to
 
 ![User Journey Video](user_journey_updated.mov)
 
-You may have to download the video (sorry)
+[Visual Design Study](visual_design_study.pdf)
 
