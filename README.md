@@ -14,4 +14,3 @@ Finally, Snoopy adds the Ravens — but after seeing their record, he decides to
 
 You may have to download the video (sorry)
 
-[visual design study](visual_design_study.pdf)
