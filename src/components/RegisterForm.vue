@@ -42,19 +42,30 @@ export default {
         const response = await fetch(`${API_BASE}/PasswordAuth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: this.username, password: this.password })
+          body: JSON.stringify({
+            path: '/PasswordAuth/register',
+            username: this.username,
+            password: this.password
+          })
         });
+
         const result = await response.json();
-        if (result.user) {
-          this.success = true;
-          this.$emit('register-success', this.username);
+
+        if (result.session) {
+          // ✅ Auto-login success
+          localStorage.setItem('session', result.session);
+          this.$emit('register-success', {
+            username: this.username,
+            session: result.session
+          });
           this.username = '';
           this.password = '';
         } else {
           this.error = result.error || 'Registration failed.';
         }
       } catch (e) {
-        this.error = 'Unable to connect to the server. Please check your connection and try again.';
+        this.error =
+          'Unable to connect to the server. Please check your connection and try again.';
         console.error('Network error during registration:', e);
       }
     }

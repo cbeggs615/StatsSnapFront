@@ -44,7 +44,8 @@ export default {
   props: {
     team: { type: Object, required: true },
     visible: { type: Boolean, required: true },
-    username: { type: String, required: true }
+    username: { type: String, required: true },
+    session: { type: String, required: true }
   },
   data() {
     return {
@@ -239,17 +240,17 @@ export default {
       }
     },
     async getUserStatsCollection() {
-      // Use the API helper function
-      return await getUserStatsCollection(this.username, this.team.sportId);
+      // Use the API helper function with session
+      return await getUserStatsCollection(this.username, this.team.sportId, this.session);
     },
 
     async addUserStat(statName) {
-      // Use the API helper function
-      return await addUserStat(this.username, this.team.sportId, statName);
+      // Use the API helper function with session
+      return await addUserStat(this.username, this.team.sportId, statName, this.session);
     },
     async removeUserStat(statName) {
-      // Use the API helper function
-      return await removeUserStat(this.username, this.team.sportId, statName);
+      // Use the API helper function with session
+      return await removeUserStat(this.username, this.team.sportId, statName, this.session);
     },
     async handleResetToDefault() {
       this.error = '';
@@ -258,7 +259,7 @@ export default {
         console.debug('Resetting to default stats for sport:', this.team.sportId);
 
         // First, remove all current user stats for this sport
-        const removeResult = await removeUserStatsCollection(this.username, this.team.sportId);
+        const removeResult = await removeUserStatsCollection(this.username, this.team.sportId, this.session);
         console.debug('Removed current stats:', removeResult);
 
         // Check if removal was successful
@@ -278,7 +279,8 @@ export default {
         const createResult = await createUserStatsCollection(
           this.username,
           this.team.sportId,
-          sportDetails.defaultKeyStats
+          sportDetails.defaultKeyStats,
+          this.session
         );
 
         if (createResult.error) {
@@ -302,6 +304,9 @@ export default {
 
         // Refresh the stats display to show the new defaults
         await this.fetchStatsAndTeamStats();
+
+        // Emit to trigger dashboard refresh for all teams of this sport
+        this.$emit('stats-reset', { sportId: this.team.sportId });
 
         console.debug('Successfully reset to default stats');
       } catch (e) {

@@ -31,11 +31,11 @@
 
 <script>
 import { API_BASE } from '../utils/apiConfig.js'
-import { fetchSportsList, fetchTeamsBySport, fetchSportDetails, createUserStatsCollection, getUserStatsCollection, removeUserStatsCollection, removeAllUserCollections } from '../utils/api.js';
+import { fetchSportsList, fetchTeamsBySport, fetchSportDetails, createUserStatsCollection, getUserStatsCollection, removeUserStatsCollection } from '../utils/api.js';
 
 export default {
   name: 'FavoriteTeamForm',
-  props: ['username'],
+  props: ['session', 'username'],
   data() {
     return {
       sportsList: [],
@@ -47,6 +47,10 @@ export default {
     }
   },
   async mounted() {
+    console.log('🔍 FavoriteTeamForm mounted with props:', {
+      session: this.session,
+      username: this.username
+    });
     await this.refreshSportsList();
   },
   methods: {
@@ -80,47 +84,51 @@ export default {
       this.success = false;
       try {
         // First, track the team
+        const requestBody = {
+          path: '/ItemTracking/addItem',
+          session: this.session,
+          item: this.selectedTeam
+        };
+        console.log('🚀 FavoriteTeamForm: Sending addItem request:', requestBody);
+
         const response = await fetch(`${API_BASE}/ItemTracking/addItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: this.username, item: this.selectedTeam })
+          body: JSON.stringify(requestBody)
         });
         const result = await response.json();
 
-        if (!result.error) {
+        if (result.success) {
           // Check if user already has a stat collection for this sport
-          console.debug('Checking for existing collection for user:', this.username, 'sport:', this.selectedSport);
-          const existingCollection = await getUserStatsCollection(this.username, this.selectedSport);
-          console.debug('Existing collection result:', existingCollection);
+          const existingCollection = await getUserStatsCollection(this.username, this.selectedSport, this.session);
 
-          // Always ensure clean slate: remove any existing collection and create fresh one
-          const sportDetails = await fetchSportDetails(this.selectedSport);
+          // Only create default stats if user doesn't have any stats for this sport yet
+          if (!existingCollection || !existingCollection.stats || existingCollection.stats.length === 0) {
+            const sportDetails = await fetchSportDetails(this.selectedSport);
 
-          if (sportDetails && sportDetails.defaultKeyStats && sportDetails.defaultKeyStats.length > 0) {
-            try {
-              // Always remove existing stat items first (if any) for clean slate
-              console.debug('Cleaning up any existing stat items for fresh start');
-              const removeResult = await removeUserStatsCollection(this.username, this.selectedSport);
-              console.debug('Stat cleanup result:', removeResult);
+            if (sportDetails && sportDetails.defaultKeyStats && sportDetails.defaultKeyStats.length > 0) {
+              try {
+                // Create default stat items for new sport
+                const statsResult = await createUserStatsCollection(
+                  this.username,
+                  this.selectedSport,
+                  sportDetails.defaultKeyStats,
+                  this.session
+                );
 
-              // Create fresh stat items with default stats
-              console.debug('Creating fresh stat items with default stats:', sportDetails.defaultKeyStats);
-              const statsResult = await createUserStatsCollection(
-                this.username,
-                this.selectedSport,
-                sportDetails.defaultKeyStats
-              );
-
-              if (statsResult.error) {
-                console.warn('Failed to create user stat items:', statsResult.error);
-              } else {
-                console.info('Successfully created fresh user stat items:', sportDetails.defaultKeyStats);
+                if (statsResult.error) {
+                  console.warn('Failed to create default user stats:', statsResult.error);
+                } else {
+                  console.info('Successfully created default user stats for new sport:', sportDetails.defaultKeyStats);
+                }
+              } catch (error) {
+                console.warn('Exception during collection management:', error.message);
               }
-            } catch (error) {
-              console.warn('Exception during collection management:', error.message);
+            } else {
+              console.warn('No sport details or default stats available for sport:', this.selectedSport);
             }
           } else {
-            console.warn('No sport details or default stats available for sport:', this.selectedSport);
+            console.info('User already has stats for this sport - keeping existing configuration');
           }
 
           this.success = true;
@@ -130,15 +138,10 @@ export default {
           this.availableTeams = [];
           await this.refreshSportsList();
           this.$emit('team-added');
-        } else {
-          // Provide user-friendly error messages
-          if (result.error.toLowerCase().includes('already') ||
-              result.error.toLowerCase().includes('duplicate') ||
-              result.error.toLowerCase().includes('exist')) {
-            this.error = 'You are already tracking this team';
-          } else {
-            this.error = result.error;
-          }
+        } else if (result.error) {
+          this.error = /already|duplicate|exist/i.test(result.error)
+            ? 'You are already tracking this team'
+            : result.error;
         }
       } catch (e) {
         this.error = 'Unable to connect to the server. Please check your connection and try again.';

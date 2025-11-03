@@ -25,7 +25,9 @@
         </div>
       </div>
     </div>
-    <div v-if="!loggedIn">
+
+    <!-- Login Screen -->
+    <div v-if="!loggedIn" class="auth-screen">
       <LoginForm @login-success="onLoginSuccess" />
       <div class="auth-toggle-section">
         <button @click="showRegister = !showRegister" class="auth-toggle-button">
@@ -34,20 +36,37 @@
       </div>
       <RegisterForm v-if="showRegister" @register-success="onRegisterSuccess" />
     </div>
-    <div v-else>
-      <DeleteAccount v-if="showDelete" :username="username" @account-deleted="onAccountDeleted" @close="showDelete = false" />
-      <ChangePasswordModal v-if="showChangePassword" :visible="showChangePassword" :username="username" @close="showChangePassword = false" />
+
+    <!-- Dashboard Screen -->
+    <div v-else class="dashboard-screen">
+      <DeleteAccount
+        v-if="showDelete"
+        :username="username"
+        @account-deleted="onAccountDeleted"
+        @close="showDelete = false"
+      />
+      <ChangePasswordModal
+        v-if="showChangePassword"
+        :visible="showChangePassword"
+        :username="username"
+        @close="showChangePassword = false"
+      />
       <div class="main-content">
         <div class="dashboard-section">
-          <DashboardView ref="dashboardView" :username="username" />
+          <DashboardView
+            ref="dashboardView"
+            :session="session"
+            :username="username"
+          />
         </div>
         <div class="form-section">
-          <FavoriteTeamForm :username="username" @team-added="onTeamAdded" />
+          <FavoriteTeamForm :session="session" :username="username" @team-added="onTeamAdded" />
         </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import { API_BASE } from './utils/apiConfig.js'
@@ -65,6 +84,7 @@ export default {
     return {
       loggedIn: false,
       username: '',
+      session: '',
       showRegister: false,
       showDelete: false,
       showChangePassword: false,
@@ -73,35 +93,98 @@ export default {
       accountMenuCloseTimer: null
     }
   },
-  methods: {
-    async ensureUserRecord(username) {
-      try {
-        await fetch(`${API_BASE}/ItemTracking/addUserRecord`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: username })
-        });
-      } catch (e) {
-        console.error('Error ensuring UserRecord:', e);
+  computed: {
+    currentView() {
+      return this.loggedIn ? 'dashboard' : 'auth';
+    }
+  },
+  watch: {
+    loggedIn(newVal, oldVal) {
+      console.log('👀 WATCHER: loggedIn changed from', oldVal, 'to', newVal);
+    },
+    session(newVal, oldVal) {
+      console.log('👀 WATCHER: session changed from', oldVal?.substring(0,8) + '...', 'to', newVal?.substring(0,8) + '...');
+    }
+  },
+  async mounted() {
+    // Check for existing session on page load
+    const existingSession = localStorage.getItem('session');
+    const existingUsername = localStorage.getItem('username');
+
+    if (existingSession && existingUsername) {
+      console.log('🔄 Found existing session, restoring login state', { username: existingUsername });
+      this.loggedIn = true;
+      this.username = existingUsername;
+      this.session = existingSession;
+      console.log('✅ Session restored', { loggedIn: this.loggedIn, username: this.username, session: this.session });
+    }
+
+    // Set up periodic session sync (every 30 seconds)
+    setInterval(() => {
+      this.syncSession();
+    }, 30000);
+
+    // Listen for storage events (when localStorage is changed in other tabs)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'session') {
+        console.log('📡 Session changed in another tab');
+        this.syncSession();
       }
-    },
-    async onLoginSuccess(username) {
+    });
+  },
+  methods: {
+    async onLoginSuccess({ username, session }) {
+      console.log('🎯 App.vue: onLoginSuccess called', { username, session });
+      console.log('🔍 BEFORE: loggedIn =', this.loggedIn, 'username =', this.username);
+
       this.loggedIn = true;
       this.username = username;
+      this.session = session;
       this.showRegister = false;
-      this.isAdmin = username === 'admin';
-      await this.ensureUserRecord(username);
+      localStorage.setItem("session", session);
+      localStorage.setItem("username", username);
+
+      console.log('🔍 AFTER: loggedIn =', this.loggedIn, 'username =', this.username, 'session =', this.session);
+      console.log('✅ App.vue: Login state updated', { loggedIn: this.loggedIn, username: this.username, session: this.session });
+
+      // Force a reactive update
+      this.$forceUpdate();
     },
-    async onRegisterSuccess(username) {
+    async onRegisterSuccess({ username, session }) {
+      console.log('🎯 App.vue: onRegisterSuccess called', { username, session });
       this.loggedIn = true;
       this.username = username;
+      this.session = session;
       this.showRegister = false;
-      this.isAdmin = username === 'admin';
-      await this.ensureUserRecord(username);
+      localStorage.setItem("session", session);
+      localStorage.setItem("username", username);
+      console.log('✅ App.vue: Register state updated', { loggedIn: this.loggedIn, username: this.username, session: this.session });
     },
-    logout() {
-      this.loggedIn = false;
-      this.username = '';
+    async logout() {
+      try {
+        const response = await fetch(`${API_BASE}/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: "/logout",
+            session: this.session,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.status === "logged_out") {
+          localStorage.removeItem("session");
+          localStorage.removeItem("username");
+          this.loggedIn = false;
+          this.username = "";
+          this.session = "";
+        } else {
+          console.error("Logout failed:", data);
+        }
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
     },
     openChangePassword() {
       this.showChangePassword = true;
@@ -110,6 +193,24 @@ export default {
     onAccountDeleted() {
       this.logout();
       this.showDelete = false;
+    },
+    updateSession(newSession) {
+      // Centralized method to update session both reactively and in localStorage
+      this.session = newSession;
+      if (newSession) {
+        localStorage.setItem('session', newSession);
+      } else {
+        localStorage.removeItem('session');
+      }
+      console.log('🔄 Session updated:', newSession?.substring(0,8) + '...');
+    },
+    syncSession() {
+      // Method to sync reactive session with localStorage
+      const storedSession = localStorage.getItem('session');
+      if (storedSession !== this.session) {
+        console.log('🔄 Syncing session from localStorage');
+        this.session = storedSession || '';
+      }
     },
     onTeamAdded() {
       // Optionally refresh dashboard or show a message
@@ -324,6 +425,19 @@ button:hover {
   margin-left: 8px; /* Reduced margin */
   margin-top: 96px; /* Align with first team position */
   box-sizing: border-box;
+}
+
+.auth-screen {
+  /* Login/Register screen styles */
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.dashboard-screen {
+  /* Dashboard screen styles */
+  padding: 20px;
+  background: rgba(248, 249, 250, 0.98);
+  min-height: calc(100vh - 80px);
 }
 
 @media (max-width: 1200px) {

@@ -56,17 +56,25 @@ export default {
         const response = await fetch(`${API_BASE}/PasswordAuth/deleteAccount`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: this.username, password: this.password })
+          body: JSON.stringify({
+            path: '/PasswordAuth/deleteAccount',
+            session: localStorage.getItem('session'),
+            password: this.password,
+          }),
         });
+
         const result = await response.json();
+
         if (result.success) {
           this.success = true;
+          localStorage.removeItem('session');
           this.$emit('account-deleted');
         } else {
           this.error = result.error || 'Delete failed.';
         }
       } catch (e) {
-        this.error = 'Unable to connect to the server. Please check your connection and try again.';
+        this.error =
+          'Unable to connect to the server. Please check your connection and try again.';
         console.error('Network error during account deletion:', e);
       }
     }

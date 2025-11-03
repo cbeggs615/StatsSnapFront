@@ -14,7 +14,9 @@
         </button>
       </div>
     </div>
-    <button type="submit" class="submit-button">Sign In</button>
+    <button type="submit" class="submit-button" :disabled="isLoading">
+      {{ isLoading ? 'Signing In...' : 'Sign In' }}
+    </button>
     <div v-if="error" class="error">{{ error }}</div>
   </form>
 </template>
@@ -29,28 +31,55 @@ export default {
       username: '',
       password: '',
       error: '',
-      showPassword: false
+      showPassword: false,
+      isLoading: false
     }
   },
   methods: {
     async handleLogin() {
+      if (this.isLoading) {
+        console.log("🚫 Login already in progress, ignoring duplicate submission");
+        return;
+      }
+
+      console.log("Submitting login form...")
+      this.isLoading = true;
       this.error = '';
       try {
         const response = await fetch(`${API_BASE}/PasswordAuth/authenticate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: this.username, password: this.password })
+          body: JSON.stringify({
+            path: '/PasswordAuth/authenticate',   // triggers your Login sync chain
+            username: this.username,
+            password: this.password
+          })
         });
+
         const result = await response.json();
-        if (result.success) {
-          this.$emit('login-success', this.username);
+
+        // result now comes from Requesting.respond in your syncs
+        if (result.session) {
+          // ✅ session was created successfully
+          localStorage.setItem('session', result.session);
+          console.log("✅ Emitting login-success", { username: this.username, result });
+          this.$emit('login-success', {
+            username: this.username,
+            session: result.session
+          });
         } else {
+          // sync responded with an error object
           this.error = result.error || 'Login failed.';
         }
       } catch (e) {
-        this.error = 'Unable to connect to the server. Please check your connection and try again.';
+        console.error('Login error:', e);
+        this.error =
+          'Unable to connect to the server. Please check your connection and try again.';
+      } finally {
+        this.isLoading = false;
       }
     }
+
   }
 }
 </script>

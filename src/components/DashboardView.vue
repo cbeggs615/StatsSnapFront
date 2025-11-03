@@ -57,8 +57,10 @@
         :team="selectedTeam"
         :visible="showEditStatsModal"
         :username="username"
+        :session="session"
         @close="closeEditStatsModal"
         @stat-added="loadTeams"
+        @stats-reset="handleStatsReset"
       />
     </div>
   </div>
@@ -73,7 +75,7 @@ import { getUserStatsCollection, createUserStatsCollection, cleanStatName } from
 export default {
   name: 'DashboardView',
   components: { TeamStatsModal, EditTeamStatsModal },
-  props: ['username'],
+  props: ['session', 'username'],
   data() {
     return {
       loading: true,
@@ -109,7 +111,7 @@ export default {
     cleanStatName,
     async getUserStatsCollection(username, sport) {
       // Use the API helper function which handles the parsing
-      return await getUserStatsCollection(username, sport);
+      return await getUserStatsCollection(username, sport, this.session);
     },
     async loadTeams() {
       this.loading = true;
@@ -121,17 +123,30 @@ export default {
         const trackedRes = await fetch(`${API_BASE}/ItemTracking/_getItemsTrackedByUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: this.username }),
+          body: JSON.stringify({
+            path: '/ItemTracking/_getItemsTrackedByUser',
+            session: this.session
+          }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
         const trackedData = await trackedRes.json();
 
-        // Handle both possible response formats
+        // Handle new sync response format: { request, results }
         let rawTeamIds = [];
-        if (Array.isArray(trackedData) && trackedData[0]?.items) {
-          rawTeamIds = trackedData[0].items;
+
+        if (trackedData.results && Array.isArray(trackedData.results)) {
+          // New sync format: results is [user, item] pairs, extract items
+          rawTeamIds = trackedData.results
+            .map(result => result.item)
+            .filter(id => id !== undefined && id !== null);
+        } else if (Array.isArray(trackedData)) {
+          // Old array format
+          rawTeamIds = trackedData
+            .map(frame => frame.item)
+            .filter(id => id !== undefined && id !== null);
         } else if (trackedData?.items) {
+          // Fallback for old object format
           rawTeamIds = trackedData.items;
         }
 
@@ -205,8 +220,6 @@ export default {
 
           // Try to fetch key stats (optional)
           try {
-            console.debug('Fetching stats for', teamname, 'with sportId', sportId);
-
             // Check if user has tracked stats for this sport
             const userStats = await this.getUserStatsCollection(this.username, sportId);
 
@@ -222,9 +235,6 @@ export default {
                 stat.startsWith('stat:') ? stat : `stat:${stat}`
               );
               requestBody.stats = apiFormatStats;
-              console.debug('Using user tracked stats:', userStats.stats, '→ API format:', apiFormatStats);
-            } else {
-              console.debug('No user stats found, using sport defaultKeyStats');
             }
 
             const statsRes = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
@@ -239,7 +249,6 @@ export default {
             }
 
             const statsData = await statsRes.json();
-            console.debug('fetchTeamStats response for', teamname, 'with sportId', sportId, ':', statsData);
 
             if (statsData.error) {
               console.error('fetchTeamStats returned error:', statsData.error);
@@ -257,9 +266,6 @@ export default {
                   }
                 });
                 team.keyStatsData = filteredKeyStatsData;
-                console.debug('Filtered keyStatsData to match user selection:', team.keyStatsData);
-              } else {
-                console.debug('Final keyStatsData (defaults):', team.keyStatsData);
               }
             }
           } catch (statsError) {
@@ -276,7 +282,6 @@ export default {
           const updatedTeam = teams.find(t => t.teamId === this.selectedTeam.teamId);
           if (updatedTeam) {
             this.selectedTeam = updatedTeam;
-            console.debug('Updated selectedTeam with fresh data:', this.selectedTeam);
           }
         }
       } catch (e) {
@@ -287,19 +292,27 @@ export default {
     },
     async removeTeam(teamId) {
       try {
-        console.log('Removing team:', teamId);
         const response = await fetch(`${API_BASE}/ItemTracking/removeItem`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: this.username, item: teamId })
+          body: JSON.stringify({
+            path: '/ItemTracking/removeItem',
+            session: this.session,
+            item: teamId
+          })
         });
         const result = await response.json();
-        if (!result.error) {
-          console.log('Team removed successfully');
+
+        if (result.success) {
           // Reload teams to refresh the display
           await this.loadTeams();
+        } else if (result.error) {
+          console.error('❌ Error removing team:', result.error);
+          // Show error to user
+          alert(`Failed to remove team: ${result.error}`);
         } else {
-          console.error('Error removing team:', result.error);
+          console.error('❌ Unexpected response removing team:', result);
+          alert('Unexpected response from server when removing team');
         }
       } catch (e) {
         console.error('Network error removing team:', e);
@@ -314,7 +327,6 @@ export default {
       this.selectedTeam = null;
     },
     openEditStatsModal(team) {
-      console.debug('Opening EditTeamStatsModal for team:', team);
       this.selectedTeam = team;
       this.showEditStatsModal = true;
     },
@@ -322,13 +334,15 @@ export default {
       this.showEditStatsModal = false;
       this.selectedTeam = null;
     },
-
+    async handleStatsReset(eventData) {
+      // Force a complete reload to ensure fresh stats are fetched
+      await this.loadTeams();
+    }
   },
   mounted() {
     this.loadTeams();
+  }
 
-    // Dashboard loaded successfully
-  },
 
 }
 </script>
