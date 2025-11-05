@@ -59,7 +59,7 @@
         :username="username"
         :session="session"
         @close="closeEditStatsModal"
-        @stat-added="loadTeams"
+        @stat-added="handleStatAdded"
         @stats-reset="handleStatsReset"
       />
     </div>
@@ -70,7 +70,7 @@
 import { API_BASE } from '../utils/apiConfig.js'
 import TeamStatsModal from './TeamStatsModal.vue';
 import EditTeamStatsModal from './EditTeamStatsModal.vue';
-import { getUserStatsCollection, createUserStatsCollection, cleanStatName } from '../utils/api.js';
+import { getUserStatsCollection, createUserStatsCollection, cleanStatName, fetchSportsList } from '../utils/api.js';
 
 export default {
   name: 'DashboardView',
@@ -304,18 +304,23 @@ export default {
         const result = await response.json();
 
         if (result.success) {
-          // Reload teams to refresh the display
-          await this.loadTeams();
+          // Smart removal: just remove from the array instead of reloading all teams
+          this.teams = this.teams.filter(team => team.teamId !== teamId);
+          
+          // If the removed team was selected, clear selection
+          if (this.selectedTeam && this.selectedTeam.teamId === teamId) {
+            this.selectedTeam = null;
+            this.showStatsModal = false;
+            this.showEditStatsModal = false;
+          }
         } else if (result.error) {
-          console.error('❌ Error removing team:', result.error);
           // Show error to user
           alert(`Failed to remove team: ${result.error}`);
         } else {
-          console.error('❌ Unexpected response removing team:', result);
           alert('Unexpected response from server when removing team');
         }
       } catch (e) {
-        console.error('Network error removing team:', e);
+        alert('Network error: Unable to remove team. Please check your connection.');
       }
     },
     openStatsModal(team) {
@@ -335,8 +340,168 @@ export default {
       this.selectedTeam = null;
     },
     async handleStatsReset(eventData) {
-      // Force a complete reload to ensure fresh stats are fetched
-      await this.loadTeams();
+      // Use sport-specific reload if sport info is available
+      if (eventData && eventData.sportId) {
+        await this.reloadTeamsBySport(eventData.sportId);
+      } else if (this.selectedTeam && this.selectedTeam.sportId) {
+        await this.reloadTeamsBySport(this.selectedTeam.sportId);
+      } else {
+        // Fallback to complete reload if no sport info available
+        await this.loadTeams();
+      }
+    },
+    // Sport-specific team reload (only reload teams from the affected sport)
+    async reloadTeamsBySport(sportId) {
+      if (!sportId) return;
+      
+      // Find all teams from this sport
+      const teamsToReload = this.teams.filter(team => team.sportId === sportId);
+      
+      if (teamsToReload.length === 0) return;
+      
+      // Reload each team's stats data
+      for (const team of teamsToReload) {
+        try {
+          const userStats = await this.getUserStatsCollection(this.username, sportId);
+          
+          const requestBody = {
+            teamname: team.teamname,
+            sport: sportId
+          };
+
+          if (userStats) {
+            const apiFormatStats = (userStats.stats || []).map(stat =>
+              stat.startsWith('stat:') ? stat : `stat:${stat}`
+            );
+            requestBody.stats = apiFormatStats;
+          }
+
+          const statsRes = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            if (statsData && !statsData.error) {
+              team.keyStatsData = statsData.keyStatsData || {};
+
+              // If user has tracked stats, filter keyStatsData to only include selected stats
+              if (userStats) {
+                const filteredKeyStatsData = {};
+                const selectedStats = userStats.stats || [];
+                selectedStats.forEach(stat => {
+                  if (team.keyStatsData[stat] !== undefined) {
+                    filteredKeyStatsData[stat] = team.keyStatsData[stat];
+                  }
+                });
+                team.keyStatsData = filteredKeyStatsData;
+              }
+            } else {
+              team.keyStatsData = {};
+            }
+          }
+        } catch (e) {
+          // If individual team reload fails, keep existing data
+          team.keyStatsData = team.keyStatsData || {};
+        }
+      }
+      
+      // Update selectedTeam reference if it's from the reloaded sport
+      if (this.selectedTeam && this.selectedTeam.sportId === sportId) {
+        const updatedTeam = this.teams.find(t => t.teamId === this.selectedTeam.teamId);
+        if (updatedTeam) {
+          this.selectedTeam = updatedTeam;
+        }
+      }
+    },
+    // Handle stat changes with sport-specific reload
+    async handleStatAdded() {
+      if (this.selectedTeam && this.selectedTeam.sportId) {
+        // Only reload teams from the same sport
+        await this.reloadTeamsBySport(this.selectedTeam.sportId);
+      } else {
+        // Fallback to full reload if no sport info available
+        await this.loadTeams();
+      }
+    },
+    // Smart team addition (no full reload)
+    async addTeamToList(teamData) {
+      if (!teamData || !teamData._id) return;
+      
+      // Transform the team data to match dashboard format
+      const teamId = teamData._id;
+      const teamname = teamData.name;
+      const sportId = teamData.sport;
+      
+      // Get sport name
+      let sportName = 'Unknown Sport';
+      try {
+        const sportsData = await fetchSportsList();
+        if (Array.isArray(sportsData)) {
+          const sport = sportsData.find(s => s._id === sportId);
+          if (sport) sportName = sport.name;
+        }
+      } catch (e) {
+        // Use fallback sport name
+      }
+
+      // Create team object with dashboard format
+      const team = {
+        teamId,
+        teamname,
+        sportId,
+        sportName,
+        keyStatsData: {}
+      };
+
+      // Try to fetch key stats
+      try {
+        const userStats = await this.getUserStatsCollection(this.username, sportId);
+        
+        const requestBody = {
+          teamname,
+          sport: sportId
+        };
+
+        if (userStats) {
+          const apiFormatStats = (userStats.stats || []).map(stat =>
+            stat.startsWith('stat:') ? stat : `stat:${stat}`
+          );
+          requestBody.stats = apiFormatStats;
+        }
+
+        const statsRes = await fetch(`${API_BASE}/SportsStats/fetchTeamStats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          if (statsData && !statsData.error) {
+            team.keyStatsData = statsData.keyStatsData || {};
+
+            // If user has tracked stats, filter keyStatsData to only include selected stats
+            if (userStats) {
+              const filteredKeyStatsData = {};
+              const selectedStats = userStats.stats || [];
+              selectedStats.forEach(stat => {
+                if (team.keyStatsData[stat] !== undefined) {
+                  filteredKeyStatsData[stat] = team.keyStatsData[stat];
+                }
+              });
+              team.keyStatsData = filteredKeyStatsData;
+            }
+          }
+        }
+      } catch (statsError) {
+        // Stats failed to load, but still show team
+      }
+
+      // Add team to existing array
+      this.teams.push(team);
     }
   },
   mounted() {

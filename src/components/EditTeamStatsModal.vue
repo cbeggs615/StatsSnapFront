@@ -96,7 +96,7 @@ export default {
       this.error = '';
       this.success = false;
       try {
-        console.debug('Adding stat:', this.selectedStat);
+
 
         // Add the individual stat
         const result = await this.addUserStat(this.selectedStat);
@@ -111,7 +111,7 @@ export default {
           this.userSelectedStats.push(this.selectedStat);
         }
 
-        console.debug('Stat added, fetching fresh team stats...');
+
 
         // Fetch fresh team stats with the updated stats
         await this.fetchTeamStats();
@@ -130,7 +130,7 @@ export default {
       this.error = '';
       this.success = false;
       try {
-        console.debug('Removing stat:', stat);
+
 
         // Remove the individual stat
         const result = await this.removeUserStat(stat);
@@ -143,7 +143,7 @@ export default {
         // Update UI immediately
         this.userSelectedStats = this.userSelectedStats.filter(s => s !== stat);
 
-        console.debug('Stat removed, fetching fresh team stats...');
+
 
         // Fetch fresh team stats with the updated stats
         await this.fetchTeamStats();

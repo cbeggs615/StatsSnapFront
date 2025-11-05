@@ -100,10 +100,10 @@ export default {
   },
   watch: {
     loggedIn(newVal, oldVal) {
-      console.log('👀 WATCHER: loggedIn changed from', oldVal, 'to', newVal);
+      // Login state changed
     },
     session(newVal, oldVal) {
-      console.log('👀 WATCHER: session changed from', oldVal?.substring(0,8) + '...', 'to', newVal?.substring(0,8) + '...');
+      // Session changed
     }
   },
   async mounted() {
@@ -112,11 +112,9 @@ export default {
     const existingUsername = localStorage.getItem('username');
 
     if (existingSession && existingUsername) {
-      console.log('🔄 Found existing session, restoring login state', { username: existingUsername });
       this.loggedIn = true;
       this.username = existingUsername;
       this.session = existingSession;
-      console.log('✅ Session restored', { loggedIn: this.loggedIn, username: this.username, session: this.session });
     }
 
     // Set up periodic session sync (every 30 seconds)
@@ -127,38 +125,29 @@ export default {
     // Listen for storage events (when localStorage is changed in other tabs)
     window.addEventListener('storage', (e) => {
       if (e.key === 'session') {
-        console.log('📡 Session changed in another tab');
         this.syncSession();
       }
     });
   },
   methods: {
     async onLoginSuccess({ username, session }) {
-      console.log('🎯 App.vue: onLoginSuccess called', { username, session });
-      console.log('🔍 BEFORE: loggedIn =', this.loggedIn, 'username =', this.username);
-
       this.loggedIn = true;
       this.username = username;
       this.session = session;
       this.showRegister = false;
       localStorage.setItem("session", session);
       localStorage.setItem("username", username);
-
-      console.log('🔍 AFTER: loggedIn =', this.loggedIn, 'username =', this.username, 'session =', this.session);
-      console.log('✅ App.vue: Login state updated', { loggedIn: this.loggedIn, username: this.username, session: this.session });
 
       // Force a reactive update
       this.$forceUpdate();
     },
     async onRegisterSuccess({ username, session }) {
-      console.log('🎯 App.vue: onRegisterSuccess called', { username, session });
       this.loggedIn = true;
       this.username = username;
       this.session = session;
       this.showRegister = false;
       localStorage.setItem("session", session);
       localStorage.setItem("username", username);
-      console.log('✅ App.vue: Register state updated', { loggedIn: this.loggedIn, username: this.username, session: this.session });
     },
     async logout() {
       try {
@@ -202,23 +191,20 @@ export default {
       } else {
         localStorage.removeItem('session');
       }
-      console.log('🔄 Session updated:', newSession?.substring(0,8) + '...');
+
     },
     syncSession() {
       // Method to sync reactive session with localStorage
       const storedSession = localStorage.getItem('session');
       if (storedSession !== this.session) {
-        console.log('🔄 Syncing session from localStorage');
         this.session = storedSession || '';
       }
     },
-    onTeamAdded() {
-      // Optionally refresh dashboard or show a message
-      // For now, just log
-      if (this.$refs.dashboardView) {
-        this.$refs.dashboardView.loadTeams();
+    onTeamAdded(teamData) {
+      // Use smart team addition instead of full reload
+      if (this.$refs.dashboardView && teamData) {
+        this.$refs.dashboardView.addTeamToList(teamData);
       }
-      console.log('Team added and tracking started!');
     },
     openAccountMenu() {
       this.showAccountMenu = true;

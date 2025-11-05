@@ -47,10 +47,6 @@ export default {
     }
   },
   async mounted() {
-    console.log('🔍 FavoriteTeamForm mounted with props:', {
-      session: this.session,
-      username: this.username
-    });
     await this.refreshSportsList();
   },
   methods: {
@@ -62,14 +58,6 @@ export default {
     },
     async fetchTeamsForSport() {
       const rawTeams = await fetchTeamsBySport(this.selectedSport);
-      console.info('Full response from /api/SportsStats/_getTeamsBySport:', rawTeams);
-      if (Array.isArray(rawTeams) && rawTeams.length === 0) {
-        console.warn(`No teams found for sport ID: ${this.selectedSport}. Check if teams exist for this sport in the backend.`);
-      } else if (!Array.isArray(rawTeams)) {
-        console.error('Unexpected response from fetchTeamsBySport:', rawTeams);
-      } else {
-        console.info(`Fetched ${rawTeams.length} teams for sport ID: ${this.selectedSport}.`);
-      }
       this.availableTeams = Array.isArray(rawTeams)
         ? rawTeams.map(team => ({
             _id: team._id,
@@ -89,7 +77,7 @@ export default {
           session: this.session,
           item: this.selectedTeam
         };
-        console.log('🚀 FavoriteTeamForm: Sending addItem request:', requestBody);
+
 
         const response = await fetch(`${API_BASE}/ItemTracking/addItem`, {
           method: 'POST',
@@ -117,27 +105,36 @@ export default {
                 );
 
                 if (statsResult.error) {
-                  console.warn('Failed to create default user stats:', statsResult.error);
+                  // Stat creation failed, but team tracking still succeeded
                 } else {
-                  console.info('Successfully created default user stats for new sport:', sportDetails.defaultKeyStats);
+                  // Default stats successfully created for new sport
                 }
               } catch (error) {
-                console.warn('Exception during collection management:', error.message);
+                // Exception during stats collection management - team tracking still works
               }
             } else {
-              console.warn('No sport details or default stats available for sport:', this.selectedSport);
+              // No sport details or default stats available
             }
           } else {
-            console.info('User already has stats for this sport - keeping existing configuration');
+            // User already has stats for this sport - keeping existing configuration
           }
 
+          // Find the full team object and ensure it has the correct sport ID
+          const addedTeam = this.availableTeams.find(team => team._id === this.selectedTeam);
+          if (addedTeam) {
+            // Make sure we use the selectedSport (dropdown value) as the sport ID
+            addedTeam.sport = this.selectedSport;
+          }
+          
           this.success = true;
           setTimeout(() => { this.success = false }, 2200);
           this.selectedTeam = '';
           this.selectedSport = '';
           this.availableTeams = [];
           await this.refreshSportsList();
-          this.$emit('team-added');
+          
+          // Emit the full team object instead of just a signal
+          this.$emit('team-added', addedTeam);
         } else if (result.error) {
           this.error = /already|duplicate|exist/i.test(result.error)
             ? 'You are already tracking this team'
@@ -145,7 +142,6 @@ export default {
         }
       } catch (e) {
         this.error = 'Unable to connect to the server. Please check your connection and try again.';
-        console.error('Network error during add favorite:', e);
       }
     }
   }
