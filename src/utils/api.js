@@ -177,7 +177,7 @@ export async function getUserStatsCollection(username, sport, session = null) {
     try {
       const sportDetails = await fetchSportDetails(sport);
       if (sportDetails && Array.isArray(sportDetails.defaultKeyStats) && sportDetails.defaultKeyStats.length > 0) {
-        const createResult = await createUserStatsCollection(username, sport, sportDetails.defaultKeyStats);
+        const createResult = await createUserStatsCollection(username, sport, sportDetails.defaultKeyStats, session);
         if (createResult.success) {
           // Convert default stats to stat: format for return
           const defaultStats = sportDetails.defaultKeyStats.map(stat =>

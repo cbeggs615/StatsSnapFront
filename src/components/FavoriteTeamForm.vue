@@ -125,14 +125,14 @@ export default {
             // Make sure we use the selectedSport (dropdown value) as the sport ID
             addedTeam.sport = this.selectedSport;
           }
-          
+
           this.success = true;
           setTimeout(() => { this.success = false }, 2200);
           this.selectedTeam = '';
           this.selectedSport = '';
           this.availableTeams = [];
           await this.refreshSportsList();
-          
+
           // Emit the full team object instead of just a signal
           this.$emit('team-added', addedTeam);
         } else if (result.error) {
